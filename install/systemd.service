@@ -1,0 +1,11 @@
+[Unit]
+Description=Sailor application deployment daemon
+After=network-online.target sailor.socket
+Wants=network-online.target
+Requires=sailor.socket
+
+[Service]
+ExecStart=/usr/local/bin/sailord
+
+[Install]
+WantedBy=multi-user.target

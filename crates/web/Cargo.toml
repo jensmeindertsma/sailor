@@ -1,0 +1,16 @@
+[package]
+name = "sailor_web"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = "0.7.5"
+http = "1.1.0"
+http-body = "1.0.0"
+http-body-util = "0.1.2"
+hyper = "1.4.1"
+hyper-util = "0.1.6"
+sailor_config = { path = "../config" }
+tokio = "1.38.0"
+tower = "0.4.13"
+tracing = "0.1.40"

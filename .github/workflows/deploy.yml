@@ -1,0 +1,40 @@
+name: deploy
+on:
+  push:
+    branches:
+      - main
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Compile project
+        run: cargo build --release
+
+      - name: List binaries
+        run: ls -lah ./target/release/
+
+      # - name: Set up SSH
+      #   run: |
+      #     mkdir -m 700 $HOME/.ssh
+      #     echo "${{ secrets.SSH_HOST_FINGERPRINT }}" > $HOME/.ssh/known_hosts
+      #     echo "${{ secrets.SSH_PRIVATE_KEY }}" > $HOME/.ssh/id_ed25519
+      #     chmod 400 $HOME/.ssh/id_ed25519
+
+      # - name: Copy new binaries to server
+      #   run: |
+      #     mkdir /tmp/sailor
+      #     cp target/release/sailor /tmp/sailor/sailor
+      #     cp target/release/sailord /tmp/sailor/sailord
+      #     scp -r /tmp/sailor github@${{ secrets.SSH_HOST }}:/tmp/
+
+      # - name: Update installation on server
+      #   run: |
+      #     ssh github@${{ secrets.SSH_HOST }} /bin/bash << EOF
+      #       sudo mv /tmp/sailor/sailor /usr/local/bin/sailor
+      #       sudo mv /tmp/sailor/sailord /usr/local/bin/sailord
+      #       rm -rf /tmp/sailor
+      #       sudo systemctl restart sailor
+      #     EOF

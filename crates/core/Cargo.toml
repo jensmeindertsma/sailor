@@ -1,0 +1,8 @@
+[package]
+name = "sailor_core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+hyper = "1.4.1"
+serde = { version = "1.0.199", features = ["derive"] }
