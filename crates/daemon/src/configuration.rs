@@ -39,7 +39,7 @@ impl Configuration {
         }
 
         let core_configuration: CoreConfiguration =
-            match fs::read_to_string("/etc/sailorconfiguration.toml")
+            match fs::read_to_string("/etc/sailor/configuration.toml")
                 .await
                 .map(|s| toml::from_str(&s).expect("Configuration file should be valid TOML"))
             {
@@ -66,7 +66,7 @@ impl Configuration {
                     }
 
                     let str =
-                        fs::read_to_string(format!("/etc/sailorapplications/{file_name}")).await;
+                        fs::read_to_string(format!("/etc/sailor/applications/{file_name}")).await;
                     let str = match str {
                         Ok(s) => s,
                         Err(e) => {
@@ -106,18 +106,18 @@ impl Configuration {
     pub async fn save(&self) {
         info!("Saving config:  {:?}", self.get());
 
-        match fs::metadata("/etc/sail").await {
+        match fs::metadata("/etc/sailor").await {
             Ok(m) => {
                 if !m.is_dir() {
-                    fs::remove_file("/etc/sail").await.unwrap();
-                    fs::create_dir("/etc/sail").await.unwrap();
+                    fs::remove_file("/etc/sailor").await.unwrap();
+                    fs::create_dir("/etc/sailor").await.unwrap();
                 };
 
                 // The directory already exists.
             }
             Err(_) => {
                 // The directory does not yet exist, create it.!
-                fs::create_dir("/etc/sail").await.unwrap();
+                fs::create_dir("/etc/sailor").await.unwrap();
             } //
         }
 
@@ -125,26 +125,26 @@ impl Configuration {
         let core =
             toml::to_string_pretty(&cfg.core).expect("internal config should be serializable");
 
-        fs::write("/etc/sailorconfiguration.toml", core)
+        fs::write("/etc/sailor/configuration.toml", core)
             .await
             .unwrap();
 
-        match fs::metadata("/etc/sailorapplications").await {
+        match fs::metadata("/etc/sailor/applications").await {
             Ok(m) => {
                 if !m.is_dir() {
-                    fs::remove_file("/etc/sailorapplications").await.unwrap();
+                    fs::remove_file("/etc/sailor/applications").await.unwrap();
                     fs::create_dir("/etc/sailorapplications").await.unwrap();
                 }
             }
             Err(_) => {
                 // does not exist, let's make the directory
-                fs::create_dir("/etc/sailorapplications").await.unwrap();
+                fs::create_dir("/etc/sailor/applications").await.unwrap();
             }
         }
 
         for app in cfg.applications.iter() {
             fs::write(
-                format!("/etc/sailorapplications/{}.toml", app.hostname),
+                format!("/etc/sailor/applications/{}.toml", app.hostname),
                 toml::to_string_pretty(app).unwrap(),
             )
             .await

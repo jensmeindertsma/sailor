@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 
 use hyper::{body::Incoming, Request, Response};
 use hyper_util::rt::TokioIo;
-use serde::{Deserialize, Serialize};
+use sailor_core::proxy::FetchError;
 use tokio::net::TcpStream;
 use tracing::{error, info, instrument};
 
@@ -42,11 +42,4 @@ pub async fn fetch(
     info!("got response: {:?}", response);
 
     response
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub enum FetchError {
-    Connection(String),
-    Handshake(String),
-    Send(String),
 }

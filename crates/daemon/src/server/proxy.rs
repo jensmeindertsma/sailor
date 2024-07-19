@@ -3,7 +3,6 @@ mod fetcher;
 
 use axum::routing::future::RouteFuture;
 use body::Body;
-use fetcher::FetchError;
 use http_body_util::{Empty, Full};
 use hyper::{
     body::{Bytes, Incoming},
@@ -11,8 +10,8 @@ use hyper::{
 };
 use pin_project::pin_project;
 use sailor_config::Configurable;
+use sailor_core::proxy::{FetchError, ProxyError};
 use sailor_web::WebInterface;
-use serde::{Deserialize, Serialize};
 use std::{
     convert::Infallible,
     future::Future,
@@ -167,6 +166,7 @@ where
                         let web_future = web.call(
                             Request::builder()
                                 .uri("/proxy-error")
+                                .header("Content-Type", "application/json")
                                 .body(Full::new(Bytes::from(error)))
                                 .expect("constructing error page request should succeed"),
                         );
@@ -201,9 +201,4 @@ where
             }
         }
     }
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-enum ProxyError {
-    FetchError(fetcher::FetchError),
 }

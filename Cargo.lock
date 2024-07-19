@@ -659,6 +659,7 @@ dependencies = [
  "hyper",
  "hyper-util",
  "sailor_config",
+ "sailor_core",
  "tokio",
  "tower",
  "tracing",

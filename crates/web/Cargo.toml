@@ -11,6 +11,7 @@ http-body-util = "0.1.2"
 hyper = "1.4.1"
 hyper-util = "0.1.6"
 sailor_config = { path = "../config" }
+sailor_core = { path = "../core" }
 tokio = "1.38.0"
 tower = "0.4.13"
 tracing = "0.1.40"
