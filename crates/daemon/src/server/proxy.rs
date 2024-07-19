@@ -163,13 +163,15 @@ where
                             .as_bytes()
                             .to_vec();
 
-                        let web_future = web.call(
-                            Request::builder()
-                                .uri("/proxy-error")
-                                .header("Content-Type", "application/json")
-                                .body(Full::new(Bytes::from(error)))
-                                .expect("constructing error page request should succeed"),
-                        );
+                        let request = Request::builder()
+                            .uri("/proxy-error")
+                            .header("Content-Type", "application/json")
+                            .body(Full::new(Bytes::from(error)))
+                            .expect("constructing error page request should succeed");
+
+                        error!("fetcher failed, falling back to {:#?}", request);
+
+                        let web_future = web.call(request);
 
                         Outcome::Mutate(ProxyFuture::Web(web_future))
                     }
@@ -197,7 +199,7 @@ where
             Outcome::Mutate(value) => {
                 *self = value;
                 info!("mutated proxy future");
-                Poll::Pending
+                self.poll(context)
             }
         }
     }

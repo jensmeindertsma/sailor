@@ -10,7 +10,7 @@ use proxy::Proxy;
 use sailor_config::Configurable;
 use std::{net::SocketAddr, sync::Arc};
 use tokio::net::TcpListener;
-use tracing::info;
+use tracing::{error, info};
 
 pub struct Server {
     config: Arc<Configuration>,
@@ -47,6 +47,16 @@ impl Server {
         let configuration = self.config.clone();
         let proxy = TowerToHyperService::new(Proxy::new(configuration));
 
-        tokio::spawn(async move { connection_builder.serve_connection(stream, proxy).await });
+        tokio::spawn(async move {
+            let result = connection_builder.serve_connection(stream, proxy).await;
+
+            match result {
+                Ok(_) => info!("Finished serving connection to {}", client_address),
+                Err(e) => error!(
+                    "error while serving connection to {}: {:?}",
+                    client_address, e
+                ),
+            }
+        });
     }
 }
