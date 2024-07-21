@@ -26,6 +26,8 @@ jobs:
       # - name: Copy new binaries to server
       #   run: |
       #     mkdir /tmp/sailor
+      #     cp install/systemd.service /tmp/sailor/sailor.service
+      #     cp install/systemd.socket /tmp/sailor/sailor.socket
       #     cp target/release/sailor /tmp/sailor/sailor
       #     cp target/release/sailord /tmp/sailor/sailord
       #     scp -r /tmp/sailor github@${{ secrets.SSH_HOST }}:/tmp/
@@ -33,14 +35,11 @@ jobs:
       # - name: Update installation on server
       #   run: |
       #     ssh github@${{ secrets.SSH_HOST }} /bin/bash << EOF
+      #       sudo cp /tmp/sailor/sailor.service /usr/lib/systemd/system/sailor.service
+      #       sudo cp /tmp/sailor/sailor.socket /usr/lib/systemd/system/sailor.socket
+      #       sudo systemctl daemon-reload
       #       sudo mv /tmp/sailor/sailor /usr/local/bin/sailor
       #       sudo mv /tmp/sailor/sailord /usr/local/bin/sailord
-
-      # TODO: we should replace service files here too, same goes for UFW,
-      # then systemctl daemon-reload,
-      # when this becomes `sailor upgrade` commmand, it should print a warning if
-      # ufw files changed so user can reload them. 
-
-      #       rm -rf /tmp/sailor
       #       sudo systemctl restart sailor
+      #       rm -rf /tmp/sailor
       #     EOF
