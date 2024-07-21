@@ -5,6 +5,8 @@ pub enum Command {
     Application,
 }
 
+// TODO: we want more here, a way to view docker logs, and a way to rotate upload secret
+
 impl std::str::FromStr for Command {
     type Err = String;
 
