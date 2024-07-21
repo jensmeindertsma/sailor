@@ -4,14 +4,15 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-axum = "0.7.5"
-http = "1.1.0"
+axum.workspace = true
+http.workspace = true
 http-body = "1.0.0"
-http-body-util = "0.1.2"
-hyper = "1.4.1"
-hyper-util = "0.1.6"
+http-body-util.workspace = true
+hyper.workspace = true
+hyper-util.workspace = true
 sailor_config = { path = "../config" }
 sailor_core = { path = "../core" }
-tokio = "1.38.0"
-tower = "0.4.13"
-tracing = "0.1.40"
+tokio.workspace = true
+tower.workspace = true
+tracing.workspace = true
+tracing-wasm = "0.2.1"

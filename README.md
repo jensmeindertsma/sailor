@@ -3,6 +3,10 @@
 Application deployment that is easy, reliable and self-owned.
 
 ## TODO
+- [ ] set up systemd failure handling
+  - [ ] set up email warning when daemon crashes using Exec, see https://www.redhat.com/sysadmin/systemd-automate-recovery#Take%20action%20on%20failure
+  - [ ] run systemctl reset-failed on deploy with github action and just install
+
 - [ ] Set up Leptos for web crate
     - Don't forget to update Just and CI build scripts to run `cargo leptos build`
     - Don't forget to update CI upgrade script to copy over new `public` assets folder.
