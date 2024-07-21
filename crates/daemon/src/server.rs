@@ -1,11 +1,8 @@
 mod proxy;
 
 use super::configuration::Configuration;
-use hyper_util::{
-    rt::{TokioExecutor, TokioIo},
-    server::conn::auto::Builder as ConnectionBuilder,
-    service::TowerToHyperService,
-};
+use hyper::server::conn::http1::Builder as ConnectionBuilder;
+use hyper_util::{rt::TokioIo, service::TowerToHyperService};
 use proxy::Proxy;
 use sailor_config::Configurable;
 use std::{net::SocketAddr, sync::Arc};
@@ -38,7 +35,7 @@ impl Server {
 
         let configuration = self.config.clone();
         let proxy = TowerToHyperService::new(Proxy::new(configuration));
-        let connection = ConnectionBuilder::new(TokioExecutor::new())
+        let connection = ConnectionBuilder::new()
             .serve_connection(TokioIo::new(stream), proxy)
             .await;
 
