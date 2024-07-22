@@ -2,20 +2,30 @@ mod proxy;
 
 use super::configuration::Configuration;
 use hyper::server::conn::http1::Builder as ConnectionBuilder;
-use hyper_util::{rt::TokioIo, service::TowerToHyperService};
+use hyper_util::{rt::TokioIo, server::graceful::GracefulShutdown, service::TowerToHyperService};
 use proxy::Proxy;
 use sailor_config::Configurable;
-use std::{net::SocketAddr, sync::Arc};
-use tokio::net::{TcpListener, TcpStream};
+use std::{net::SocketAddr, sync::Arc, time::Duration};
+use tokio::{
+    net::TcpListener,
+    select,
+    signal::unix::{signal, SignalKind},
+    sync::watch,
+    time::sleep,
+};
 use tracing::{error, info};
 
 pub struct Server {
     config: Arc<Configuration>,
+    http: ConnectionBuilder,
 }
 
 impl Server {
     pub fn with_config(config: Arc<Configuration>) -> Self {
-        Self { config }
+        Self {
+            config,
+            http: ConnectionBuilder::new(),
+        }
     }
 
     pub async fn start(&self) {
@@ -25,26 +35,52 @@ impl Server {
             .await
             .unwrap_or_else(|_| panic!("binding to localhost:{port} failed!"));
 
-        while let Ok((stream, address)) = listener.accept().await {
-            self.handle_connection(stream, address).await
+        let (stop_tx, mut stop_rx) = watch::channel(());
+
+        tokio::spawn(async move {
+            let mut sigterm = signal(SignalKind::terminate()).unwrap();
+            sigterm.recv().await;
+            stop_tx.send(()).unwrap();
+        });
+
+        let graceful = GracefulShutdown::new();
+
+        loop {
+            select! {
+                biased;
+
+                _ = stop_rx.changed() => {
+                    info!("received SIGTERM signal!");
+                    break},
+                Ok((stream, address)) = listener.accept() => {
+                    let configuration = self.config.clone();
+                    let http = self.http.clone();
+                    let io = TokioIo::new(stream);
+
+                    let proxy = TowerToHyperService::new(Proxy::new(configuration));
+
+                    info!("serving connection from {address}");
+
+                    let connection = http.serve_connection(io, proxy);
+                    let future = graceful.watch(connection);
+
+                    tokio::spawn(async move {
+                        if let Err(error) = future.await {
+                            error!("Error while handling connection: {error:?}")
+                        }
+                    })
+
+                }
+            };
         }
-    }
 
-    async fn handle_connection(&self, stream: TcpStream, client_address: SocketAddr) {
-        info!("handling connection from {}", client_address);
-
-        let configuration = self.config.clone();
-        let proxy = TowerToHyperService::new(Proxy::new(configuration));
-        let connection = ConnectionBuilder::new()
-            .serve_connection(TokioIo::new(stream), proxy)
-            .await;
-
-        match connection {
-            Ok(_) => info!("Finished serving connection to {}", client_address),
-            Err(e) => error!(
-                "error while serving connection to {}: {:?}",
-                client_address, e
-            ),
+        tokio::select! {
+            _ = graceful.shutdown() => {
+                info!("all connections gracefully closed");
+            },
+            _ = sleep(Duration::from_secs(10)) => {
+                error!("timed out wait for all connections to close");
+            }
         }
     }
 }
