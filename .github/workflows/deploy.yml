@@ -40,6 +40,7 @@ jobs:
       #       sudo systemctl daemon-reload
       #       sudo mv /tmp/sailor/sailor /usr/local/bin/sailor
       #       sudo mv /tmp/sailor/sailord /usr/local/bin/sailord
+      #       sudo systemctl reset-failed
       #       sudo systemctl restart sailor
       #       rm -rf /tmp/sailor
       #     EOF
