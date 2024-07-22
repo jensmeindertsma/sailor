@@ -20,12 +20,23 @@ sailor_core = { path = "../core" }
 tokio = { workspace = true, optional = true }
 tower = { workspace = true, optional = true }
 tower-http = { version = "0.5.2", optional = true, features = ["fs"] }
-tracing.workspace = true
+tracing = { workspace = true, optional = true }
 tracing-wasm = "0.2.1"
-
+wasm-bindgen = "0.2.92"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [features]
 hydrate = ["leptos/hydrate", "leptos_meta/hydrate", "leptos_router/hydrate"]
+ssr = [
+    "dep:axum",
+    "dep:tokio",
+    "dep:tower",
+    "dep:tower-http",
+    "dep:leptos_axum",
+    "leptos/ssr",
+    "leptos_meta/ssr",
+    "leptos_router/ssr",
+    "dep:tracing",
+]

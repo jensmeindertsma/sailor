@@ -1,7 +1,7 @@
-use axum::http::StatusCode;
 use core::fmt;
+use http::StatusCode;
 use leptos::{
-    component, create_rw_signal, create_signal, use_context, view, Errors, For, IntoView, RwSignal,
+    component, create_rw_signal, create_signal, view, Errors, For, IntoView, RwSignal,
     SignalGetUntracked, SignalUpdate,
 };
 use leptos_meta::{provide_meta_context, Stylesheet, Title};
@@ -106,10 +106,14 @@ pub fn ErrorTemplate(
     // Only the response code for the first error is actually sent from the server
     // this may be customized by the specific application
 
-    use leptos_axum::ResponseOptions;
-    let response = use_context::<ResponseOptions>();
-    if let Some(response) = response {
-        response.set_status(errors[0].status_code());
+    #[cfg(feature = "ssr")]
+    {
+        use leptos::use_context;
+        use leptos_axum::ResponseOptions;
+        let response = use_context::<ResponseOptions>();
+        if let Some(response) = response {
+            response.set_status(errors[0].status_code());
+        }
     }
 
     view! {
