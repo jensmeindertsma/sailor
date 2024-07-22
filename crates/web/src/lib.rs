@@ -1,11 +1,15 @@
 mod app;
+mod files;
 
+pub use app::App;
 use axum::{
     body::{Body, Bytes, HttpBody},
     routing::future::RouteFuture,
     BoxError, Router,
 };
 use hyper::{Request, Response};
+use leptos::{get_configuration, LeptosOptions};
+use leptos_axum::{generate_route_list, LeptosRoutes};
 use sailor_config::Configurable;
 use std::{
     convert::Infallible,
@@ -14,6 +18,19 @@ use std::{
 };
 use tower::Service;
 use tracing::info;
+
+pub fn hydrate() {
+    console_error_panic_hook::set_once();
+    tracing_wasm::set_as_global_default();
+    leptos::mount_to_body(App);
+}
+
+pub type WebOptions = LeptosOptions;
+
+pub async fn load_web_options() -> WebOptions {
+    let conf = get_configuration(None).await.unwrap();
+    conf.leptos_options
+}
 
 #[derive(Debug, Default)]
 pub struct WebInterface<C> {
@@ -31,9 +48,15 @@ impl<C> Clone for WebInterface<C> {
 }
 
 impl<C> WebInterface<C> {
-    pub fn new(configuration: Arc<C>) -> Self {
+    pub fn new(configuration: Arc<C>, leptos_options: LeptosOptions) -> Self {
+        let routes = generate_route_list(App);
+
         Self {
-            router: app::create_router(),
+            router: Router::new()
+                .leptos_routes(&leptos_options, routes, App)
+                .fallback(files::file_and_error_handler)
+                .with_state(leptos_options),
+
             configuration,
         }
     }

@@ -23,7 +23,11 @@
           devShells.default = mkShell {
             packages = [
               alejandra
+              binaryen
+              cargo-nextest
+              dart-sass
               just
+              leptosfmt
               nil
               openssl
               rust-analyzer-unwrapped

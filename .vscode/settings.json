@@ -1,0 +1,14 @@
+{
+  "rust-analyzer.check.extraArgs": [
+    "--target-dir",
+    "${workspaceFolder}/target/check"
+  ],
+  "rust-analyzer.rustfmt.overrideCommand": [
+    "leptosfmt",
+    "--config-file",
+    "${workspaceFolder}/leptosfmt.toml",
+    "--stdin",
+    "--rustfmt"
+  ],
+  "rust-analyzer.server.path": "rust-analyzer"
+}

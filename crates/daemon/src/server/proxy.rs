@@ -11,7 +11,7 @@ use hyper::{
 use pin_project::pin_project;
 use sailor_config::Configurable;
 use sailor_core::proxy::{FetchError, ProxyError};
-use sailor_web::WebInterface;
+use sailor_web::{WebInterface, WebOptions};
 use std::{
     convert::Infallible,
     future::Future,
@@ -42,9 +42,9 @@ impl<C> Proxy<C>
 where
     C: Configurable,
 {
-    pub fn new(configuration: Arc<C>) -> Self {
+    pub fn new(configuration: Arc<C>, web_options: WebOptions) -> Self {
         Self {
-            web: WebInterface::new(configuration.clone()),
+            web: WebInterface::new(configuration.clone(), web_options),
             configuration,
         }
     }

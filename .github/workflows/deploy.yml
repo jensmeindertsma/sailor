@@ -11,7 +11,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Compile project
-        run: cargo build --release
+        run: just build-release
 
       - name: List binaries
         run: ls -lah ./target/release/

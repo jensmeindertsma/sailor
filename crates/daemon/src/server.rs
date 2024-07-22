@@ -43,6 +43,8 @@ impl Server {
             stop_tx.send(()).unwrap();
         });
 
+        let web_options = sailor_web::load_web_options().await;
+
         let graceful = GracefulShutdown::new();
 
         loop {
@@ -57,7 +59,7 @@ impl Server {
                     let http = self.http.clone();
                     let io = TokioIo::new(stream);
 
-                    let proxy = TowerToHyperService::new(Proxy::new(configuration));
+                    let proxy = TowerToHyperService::new(Proxy::new(configuration, web_options.clone()));
 
                     info!("serving connection from {address}");
 

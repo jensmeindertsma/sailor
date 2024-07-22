@@ -3,6 +3,9 @@ build:
     echo "Compiling Sailor"
     cargo build
 
+build-release:
+    cargo build --release
+
 install: uninstall build
     #!/usr/bin/env bash
     echo "Installing Sailor"
