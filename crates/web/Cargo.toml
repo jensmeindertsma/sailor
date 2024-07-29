@@ -1,5 +1,5 @@
 [package]
-name = "sailor_web"
+name = "sail_web"
 version = "0.1.0"
 edition = "2021"
 
@@ -15,8 +15,8 @@ leptos = { version = "0.6.12", features = ["nightly"] }
 leptos_axum = { version = "0.6.12", optional = true }
 leptos_meta = { version = "0.6.12", features = ["nightly"] }
 leptos_router = { version = "0.6.12", features = ["nightly"] }
-sailor_config = { path = "../config" }
-sailor_core = { path = "../core" }
+sail_config = { path = "../config" }
+sail_core = { path = "../core" }
 tokio = { workspace = true, optional = true }
 tower = { workspace = true, optional = true }
 tower-http = { version = "0.5.2", optional = true, features = ["fs"] }

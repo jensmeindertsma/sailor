@@ -9,9 +9,9 @@ use hyper::{
     Request, Response,
 };
 use pin_project::pin_project;
-use sailor_config::Configurable;
-use sailor_core::proxy::{FetchError, ProxyError};
-use sailor_web::{WebInterface, WebOptions};
+use sail_config::Configurable;
+use sail_core::proxy::{FetchError, ProxyError};
+use sail_web::{WebInterface, WebOptions};
 use std::{
     convert::Infallible,
     future::Future,

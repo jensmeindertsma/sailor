@@ -7,7 +7,7 @@ use std::{
     process::{ExitCode, Termination},
 };
 
-const SOCKET_PATH: &str = "/run/sailor.socket";
+const SOCKET_PATH: &str = "/run/sail.socket";
 
 fn main() -> impl Termination {
     let arguments: Vec<String> = env::args().skip(1).collect();

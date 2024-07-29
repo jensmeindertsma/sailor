@@ -1,5 +1,5 @@
 [package]
-name = "sailor_daemon"
+name = "sail_daemon"
 version = "0.1.0"
 edition = "2021"
 
@@ -9,9 +9,9 @@ http-body-util.workspace = true
 hyper = { workspace = true, features = ["full"] }
 hyper-util = { workspace = true, features = ["full"] }
 pin-project = "1.1.5"
-sailor_config = { path = "../config" }
-sailor_core = { path = "../core" }
-sailor_web = { path = "../web", features = ["ssr"] }
+sail_config = { path = "../config" }
+sail_core = { path = "../core" }
+sail_web = { path = "../web", features = ["ssr"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 tokio = { workspace = true, features = ["full"] }
@@ -21,5 +21,5 @@ tracing.workspace = true
 tracing-subscriber = "0.3.8"
 
 [[bin]]
-name = "sailord"
+name = "saild"
 path = "src/main.rs"

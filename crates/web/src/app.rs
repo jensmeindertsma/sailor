@@ -13,7 +13,7 @@ pub fn App() -> impl IntoView {
     provide_meta_context();
 
     view! {
-        <Stylesheet id="leptos" href="/pkg/sailor.css"/>
+        <Stylesheet id="leptos" href="/pkg/sail.css"/>
 
         // sets the document title
         <Title text="Welcome to Leptos"/>

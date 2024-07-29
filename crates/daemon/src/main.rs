@@ -23,7 +23,7 @@ async fn main() {
 
     let config = configuration.clone();
     tasks.spawn(async move {
-        // The interface attaches to the systemd socket to listen for and process request messages sent by the CLI tool `sailor`.
+        // The interface attaches to the systemd socket to listen for and process request messages sent by the CLI tool `sail`.
         Interface::attach_to_systemd_socket(config)
             .handle_requests()
             .await

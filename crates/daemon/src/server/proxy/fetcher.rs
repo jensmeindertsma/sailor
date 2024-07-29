@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 
 use hyper::{body::Incoming, Request, Response};
 use hyper_util::rt::TokioIo;
-use sailor_core::proxy::FetchError;
+use sail_core::proxy::FetchError;
 use tokio::net::TcpStream;
 use tracing::{error, info, instrument};
 

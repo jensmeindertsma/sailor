@@ -1,4 +1,4 @@
-use sailor_core::control::{Message, Reply, Request, Response};
+use sail_core::control::{Message, Reply, Request, Response};
 use std::{
     io::{self, BufRead, BufReader, Lines, Write},
     os::unix::net::UnixStream,

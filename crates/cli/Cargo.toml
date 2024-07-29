@@ -1,15 +1,15 @@
 [package]
-name = "sailor_cli"
+name = "sail_cli"
 version = "0.1.0"
 edition = "2021"
 
 [[bin]]
 path = "src/main.rs"
-name = "sailor"
+name = "sail"
 
 [dependencies]
 owo-colors = "4.0.0"
 rand = "0.8.5"
-sailor_core = { path = "../core" }
+sail_core = { path = "../core" }
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true

@@ -1,6 +1,6 @@
 use crate::configuration::Configuration;
-use sailor_config::{Configurable, CurrentConfiguration};
-use sailor_core::control::{Message, Reply, Request, Response};
+use sail_config::{Configurable, CurrentConfiguration};
+use sail_core::control::{Message, Reply, Request, Response};
 use std::os::fd::FromRawFd;
 use std::{env, sync::Arc};
 use tokio::{

@@ -1559,26 +1559,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f3cb5ba0dc43242ce17de99c180e96db90b235b8a9fdc9543c96d2209116bd9f"
 
 [[package]]
-name = "sailor_cli"
+name = "sail_cli"
 version = "0.1.0"
 dependencies = [
  "owo-colors",
  "rand",
- "sailor_core",
+ "sail_core",
  "serde",
  "serde_json",
 ]
 
 [[package]]
-name = "sailor_config"
+name = "sail_config"
 version = "0.1.0"
 dependencies = [
- "sailor_core",
+ "sail_core",
  "serde",
 ]
 
 [[package]]
-name = "sailor_core"
+name = "sail_core"
 version = "0.1.0"
 dependencies = [
  "hyper",
@@ -1586,7 +1586,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "sailor_daemon"
+name = "sail_daemon"
 version = "0.1.0"
 dependencies = [
  "axum",
@@ -1594,9 +1594,9 @@ dependencies = [
  "hyper",
  "hyper-util",
  "pin-project",
- "sailor_config",
- "sailor_core",
- "sailor_web",
+ "sail_config",
+ "sail_core",
+ "sail_web",
  "serde",
  "serde_json",
  "tokio",
@@ -1607,7 +1607,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "sailor_web"
+name = "sail_web"
 version = "0.1.0"
 dependencies = [
  "axum",
@@ -1621,8 +1621,8 @@ dependencies = [
  "leptos_axum",
  "leptos_meta",
  "leptos_router",
- "sailor_config",
- "sailor_core",
+ "sail_config",
+ "sail_core",
  "tokio",
  "tower",
  "tower-http",

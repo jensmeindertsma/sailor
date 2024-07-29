@@ -1,8 +1,8 @@
 [package]
-name = "sailor_config"
+name = "sail_config"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-sailor_core = { path = "../core" }
+sail_core = { path = "../core" }
 serde.workspace = true

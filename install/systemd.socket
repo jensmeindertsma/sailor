@@ -1,8 +1,8 @@
 [Socket]
-ListenStream=/run/sailor.socket
+ListenStream=/run/sail.socket
 SocketMode=0660
 SocketUser=root
-SocketGroup=sailors
+SocketGroup=sail
 
 [Install]
 WantedBy=sockets.target

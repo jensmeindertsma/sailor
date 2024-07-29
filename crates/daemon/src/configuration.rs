@@ -1,5 +1,5 @@
-use sailor_config::{Configurable, CoreConfiguration, CurrentConfiguration};
-use sailor_core::application::Application;
+use sail_config::{Configurable, CoreConfiguration, CurrentConfiguration};
+use sail_core::application::Application;
 use std::sync::{Arc, Mutex};
 use tokio::fs;
 use tracing::{error, info};
@@ -32,14 +32,14 @@ impl Configurable for Configuration {
 
 impl Configuration {
     pub async fn from_filesystem() -> Self {
-        if let Ok(m) = fs::metadata("/etc/sailor").await {
+        if let Ok(m) = fs::metadata("/etc/sail").await {
             if !m.is_dir() {
-                panic!("Unexpected file at `/etc/sailor`, please remove")
+                panic!("Unexpected file at `/etc/sail`, please remove")
             }
         }
 
         let core_configuration: CoreConfiguration =
-            match fs::read_to_string("/etc/sailor/configuration.toml")
+            match fs::read_to_string("/etc/sail/configuration.toml")
                 .await
                 .map(|s| toml::from_str(&s).expect("Configuration file should be valid TOML"))
             {
@@ -47,7 +47,7 @@ impl Configuration {
                 Err(_) => CoreConfiguration { port: DEFAULT_PORT },
             };
 
-        let applications = match fs::read_dir("/etc/sailor/applications").await {
+        let applications = match fs::read_dir("/etc/sail/applications").await {
             Ok(mut entries) => {
                 let mut apps = Vec::new();
 
@@ -66,7 +66,7 @@ impl Configuration {
                     }
 
                     let str =
-                        fs::read_to_string(format!("/etc/sailor/applications/{file_name}")).await;
+                        fs::read_to_string(format!("/etc/sail/applications/{file_name}")).await;
                     let str = match str {
                         Ok(s) => s,
                         Err(e) => {
@@ -106,18 +106,18 @@ impl Configuration {
     pub async fn save(&self) {
         info!("Saving config:  {:?}", self.get());
 
-        match fs::metadata("/etc/sailor").await {
+        match fs::metadata("/etc/sail").await {
             Ok(m) => {
                 if !m.is_dir() {
-                    fs::remove_file("/etc/sailor").await.unwrap();
-                    fs::create_dir("/etc/sailor").await.unwrap();
+                    fs::remove_file("/etc/sail").await.unwrap();
+                    fs::create_dir("/etc/sail").await.unwrap();
                 };
 
                 // The directory already exists.
             }
             Err(_) => {
                 // The directory does not yet exist, create it.!
-                fs::create_dir("/etc/sailor").await.unwrap();
+                fs::create_dir("/etc/sail").await.unwrap();
             } //
         }
 
@@ -125,26 +125,26 @@ impl Configuration {
         let core =
             toml::to_string_pretty(&cfg.core).expect("internal config should be serializable");
 
-        fs::write("/etc/sailor/configuration.toml", core)
+        fs::write("/etc/sail/configuration.toml", core)
             .await
             .unwrap();
 
-        match fs::metadata("/etc/sailor/applications").await {
+        match fs::metadata("/etc/sail/applications").await {
             Ok(m) => {
                 if !m.is_dir() {
-                    fs::remove_file("/etc/sailor/applications").await.unwrap();
-                    fs::create_dir("/etc/sailorapplications").await.unwrap();
+                    fs::remove_file("/etc/sail/applications").await.unwrap();
+                    fs::create_dir("/etc/sailapplications").await.unwrap();
                 }
             }
             Err(_) => {
                 // does not exist, let's make the directory
-                fs::create_dir("/etc/sailor/applications").await.unwrap();
+                fs::create_dir("/etc/sail/applications").await.unwrap();
             }
         }
 
         for app in cfg.applications.iter() {
             fs::write(
-                format!("/etc/sailor/applications/{}.toml", app.hostname),
+                format!("/etc/sail/applications/{}.toml", app.hostname),
                 toml::to_string_pretty(app).unwrap(),
             )
             .await

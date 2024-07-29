@@ -1,5 +1,5 @@
 use crate::app::{controller::Controller, Failure};
-use sailor_core::{
+use sail_core::{
     application::Application,
     control::{Request, Response},
 };

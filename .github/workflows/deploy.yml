@@ -25,22 +25,22 @@ jobs:
 
       # - name: Copy new binaries to server
       #   run: |
-      #     mkdir /tmp/sailor
-      #     cp install/systemd.service /tmp/sailor/sailor.service
-      #     cp install/systemd.socket /tmp/sailor/sailor.socket
-      #     cp target/release/sailor /tmp/sailor/sailor
-      #     cp target/release/sailord /tmp/sailor/sailord
-      #     scp -r /tmp/sailor github@${{ secrets.SSH_HOST }}:/tmp/
+      #     mkdir /tmp/sail
+      #     cp install/systemd.service /tmp/sail/sail.service
+      #     cp install/systemd.socket /tmp/sail/sail.socket
+      #     cp target/release/sail /tmp/sail/sail
+      #     cp target/release/saild /tmp/sail/saild
+      #     scp -r /tmp/sail github@${{ secrets.SSH_HOST }}:/tmp/
 
       # - name: Update installation on server
       #   run: |
       #     ssh github@${{ secrets.SSH_HOST }} /bin/bash << EOF
-      #       sudo cp /tmp/sailor/sailor.service /usr/lib/systemd/system/sailor.service
-      #       sudo cp /tmp/sailor/sailor.socket /usr/lib/systemd/system/sailor.socket
+      #       sudo cp /tmp/sail/sail.service /usr/lib/systemd/system/sail.service
+      #       sudo cp /tmp/sail/sail.socket /usr/lib/systemd/system/sail.socket
       #       sudo systemctl daemon-reload
-      #       sudo mv /tmp/sailor/sailor /usr/local/bin/sailor
-      #       sudo mv /tmp/sailor/sailord /usr/local/bin/sailord
+      #       sudo mv /tmp/sail/sail /usr/local/bin/sail
+      #       sudo mv /tmp/sail/saild /usr/local/bin/saild
       #       sudo systemctl reset-failed
-      #       sudo systemctl restart sailor
-      #       rm -rf /tmp/sailor
+      #       sudo systemctl restart sail
+      #       rm -rf /tmp/sail
       #     EOF

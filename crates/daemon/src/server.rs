@@ -4,7 +4,7 @@ use super::configuration::Configuration;
 use hyper::server::conn::http1::Builder as ConnectionBuilder;
 use hyper_util::{rt::TokioIo, server::graceful::GracefulShutdown, service::TowerToHyperService};
 use proxy::Proxy;
-use sailor_config::Configurable;
+use sail_config::Configurable;
 use std::{net::SocketAddr, sync::Arc, time::Duration};
 use tokio::{
     net::TcpListener,
@@ -43,7 +43,7 @@ impl Server {
             stop_tx.send(()).unwrap();
         });
 
-        let web_options = sailor_web::load_web_options().await;
+        let web_options = sail_web::load_web_options().await;
 
         let graceful = GracefulShutdown::new();
 

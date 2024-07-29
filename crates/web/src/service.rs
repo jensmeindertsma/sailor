@@ -9,7 +9,7 @@ use axum::{
 use hyper::{Request, Response};
 use leptos::{get_configuration, LeptosOptions};
 use leptos_axum::{generate_route_list, LeptosRoutes};
-use sailor_config::Configurable;
+use sail_config::Configurable;
 use std::{
     convert::Infallible,
     sync::Arc,
