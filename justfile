@@ -1,6 +1,7 @@
+help:
+    just --list
+
 build:
-    #!/usr/bin/env bash
-    echo "Compiling Sail"
     cargo build
 
 build-release:
