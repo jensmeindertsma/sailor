@@ -35,7 +35,8 @@ Follow these steps to set up your development environment inside a Ubuntu VM. We
 3. Install Nix:
    ```
    sh <(curl -L https://nixos.org/nix/install) --daemon
-   sudo echo "experimental-features = nix-command flakes" >> /etc/nix/nix.conf
+   ```
+   echo "experimental-features = nix-command flakes" | sudo tee -a /etc/nix/nix.conf
    nix profile install nixpkgs#direnv
    echo 'eval "$(direnv hook bash)"' >> ~/.bashrc
    ```
