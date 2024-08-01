@@ -68,5 +68,7 @@ Follow these steps to set up your development environment inside a Ubuntu VM. We
    cd sail
    direnv allow
    direnv reload
+   ```
+   ```
    just install
    ```
