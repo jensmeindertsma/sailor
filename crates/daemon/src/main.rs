@@ -38,6 +38,6 @@ async fn main() {
     });
 
     while tasks.join_next().await.is_some() {
-        info!("Finished task")
+        info!("Finished task, {} left", tasks.len());
     }
 }

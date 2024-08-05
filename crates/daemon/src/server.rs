@@ -51,7 +51,8 @@ impl Server {
 
                 _ = stop_rx.changed() => {
                     info!("received SIGTERM signal!");
-                    break},
+                    break
+                },
                 Ok((stream, address)) = listener.accept() => {
                     let configuration = self.config.clone();
                     let http = self.http.clone();
@@ -73,6 +74,8 @@ impl Server {
                 }
             };
         }
+
+        println!("HEY");
 
         tokio::select! {
             _ = graceful.shutdown() => {

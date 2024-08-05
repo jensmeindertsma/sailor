@@ -30,8 +30,8 @@ impl<C> Clone for WebInterface<C> {
     }
 }
 
-async fn handle_request(uri: Uri, Json(json): Json<String>) -> impl IntoResponse {
-    Html(format!("<h1>Hey `{uri}`<h1><p>{json}</p>"))
+async fn handle_request(uri: Uri, json: Option<Json<String>>) -> impl IntoResponse {
+    Html(format!("<h1>Hey `{uri}`<h1><p>{json:?}</p>\n"))
 }
 
 impl<C> WebInterface<C> {
