@@ -1,14 +1,11 @@
-mod files;
-
-use crate::App;
 use axum::{
     body::{Body, Bytes, HttpBody},
+    response::{Html, IntoResponse},
     routing::future::RouteFuture,
-    BoxError, Router,
+    BoxError, Json, Router,
 };
+use http::Uri;
 use hyper::{Request, Response};
-use leptos::{get_configuration, LeptosOptions};
-use leptos_axum::{generate_route_list, LeptosRoutes};
 use sail_config::Configurable;
 use std::{
     convert::Infallible,
@@ -17,13 +14,6 @@ use std::{
 };
 use tower::Service;
 use tracing::info;
-
-pub type WebOptions = LeptosOptions;
-
-pub async fn load_web_options() -> WebOptions {
-    let conf = get_configuration(None).await.unwrap();
-    conf.leptos_options
-}
 
 #[derive(Debug, Default)]
 pub struct WebInterface<C> {
@@ -40,15 +30,14 @@ impl<C> Clone for WebInterface<C> {
     }
 }
 
-impl<C> WebInterface<C> {
-    pub fn new(configuration: Arc<C>, leptos_options: LeptosOptions) -> Self {
-        let routes = generate_route_list(App);
+async fn handle_request(uri: Uri, Json(json): Json<String>) -> impl IntoResponse {
+    Html(format!("<h1>Hey `{uri}`<h1><p>{json}</p>"))
+}
 
+impl<C> WebInterface<C> {
+    pub fn new(configuration: Arc<C>) -> Self {
         Self {
-            router: Router::new()
-                .leptos_routes(&leptos_options, routes, App)
-                .fallback(files::file_and_error_handler)
-                .with_state(leptos_options),
+            router: Router::new().fallback(handle_request),
 
             configuration,
         }

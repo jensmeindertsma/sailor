@@ -23,16 +23,13 @@
           devShells.default = mkShell {
             packages = [
               alejandra
-              binaryen
+              bash
               cargo-nextest
-              dart-sass
               just
-              leptosfmt
               nil
               openssl
               rust-analyzer-unwrapped
               toolchain
-              wasm-pack
             ];
 
             RUST_SRC_PATH = "${toolchain}/lib/rustlib/src/rust/library";

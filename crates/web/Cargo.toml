@@ -4,39 +4,16 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-axum = { workspace = true, optional = true }
+axum = { workspace = true }
 console_error_panic_hook = "0.1.7"
 http.workspace = true
 http-body = "1.0.0"
 http-body-util.workspace = true
 hyper.workspace = true
 hyper-util.workspace = true
-leptos = { version = "0.6.12", features = ["nightly"] }
-leptos_axum = { version = "0.6.12", optional = true }
-leptos_meta = { version = "0.6.12", features = ["nightly"] }
-leptos_router = { version = "0.6.12", features = ["nightly"] }
 sail_config = { path = "../config" }
 sail_core = { path = "../core" }
-tokio = { workspace = true, optional = true }
-tower = { workspace = true, optional = true }
-tower-http = { version = "0.5.2", optional = true, features = ["fs"] }
-tracing = { workspace = true, optional = true }
-tracing-wasm = "0.2.1"
-wasm-bindgen = "0.2.92"
-
-[lib]
-crate-type = ["cdylib", "rlib"]
-
-[features]
-hydrate = ["leptos/hydrate", "leptos_meta/hydrate", "leptos_router/hydrate"]
-ssr = [
-    "dep:axum",
-    "dep:tokio",
-    "dep:tower",
-    "dep:tower-http",
-    "dep:leptos_axum",
-    "leptos/ssr",
-    "leptos_meta/ssr",
-    "leptos_router/ssr",
-    "dep:tracing",
-]
+tokio = { workspace = true }
+tower = { workspace = true }
+tower-http = { version = "0.5.2", features = ["fs"] }
+tracing = { workspace = true }

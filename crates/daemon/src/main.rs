@@ -32,8 +32,12 @@ async fn main() {
     tasks.spawn(async move {
         let server = Server::with_config(configuration);
 
-        server.start().await
+        server.start().await;
+
+        info!("Finished serving")
     });
 
-    while tasks.join_next().await.is_some() {}
+    while tasks.join_next().await.is_some() {
+        info!("Finished task")
+    }
 }
