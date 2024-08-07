@@ -1,16 +1,15 @@
+mod connection;
+
+pub use connection::SocketConnection;
+
 use std::{
     env::{self, VarError},
-    io,
     os::fd::FromRawFd,
 };
 
-use sail_core::{Message, Reply};
 use tokio::{
-    io::{AsyncBufReadExt, AsyncWriteExt, BufReader, Lines},
-    net::{
-        unix::{OwnedReadHalf, OwnedWriteHalf, SocketAddr},
-        UnixListener,
-    },
+    io::{self, AsyncBufReadExt, BufReader},
+    net::UnixListener,
 };
 
 pub struct Socket {
@@ -43,59 +42,12 @@ impl Socket {
         let (stream, socket_address) = self.listener.accept().await?;
         let (reader, writer) = stream.into_split();
 
-        Ok(SocketConnection {
-            reader: BufReader::new(reader).lines(),
+        Ok(SocketConnection::new(
+            BufReader::new(reader).lines(),
             writer,
             socket_address,
-        })
+        ))
     }
-}
-
-#[derive(Debug)]
-pub struct SocketConnection {
-    reader: Lines<BufReader<OwnedReadHalf>>,
-    writer: OwnedWriteHalf,
-    pub socket_address: SocketAddr,
-}
-
-impl SocketConnection {
-    pub async fn accept(&mut self) -> Result<Option<Message>, ConnectionError> {
-        let maybe_line = self
-            .reader
-            .next_line()
-            .await
-            .map_err(ConnectionError::Read)?;
-
-        Ok(match maybe_line {
-            Some(line) => Some(
-                serde_json::from_str::<Message>(&line).map_err(ConnectionError::Deserialization)?,
-            ),
-            None => None,
-        })
-    }
-
-    pub async fn reply(&mut self, reply: Reply) -> Result<(), ConnectionError> {
-        self.writer
-            .write_all(
-                format!(
-                    "{}\n",
-                    serde_json::to_string(&reply).map_err(ConnectionError::Serialization)?
-                )
-                .as_bytes(),
-            )
-            .await
-            .map_err(ConnectionError::Write)?;
-
-        Ok(())
-    }
-}
-
-#[derive(Debug)]
-pub enum ConnectionError {
-    Deserialization(serde_json::Error),
-    Read(io::Error),
-    Serialization(serde_json::Error),
-    Write(io::Error),
 }
 
 #[derive(Debug)]

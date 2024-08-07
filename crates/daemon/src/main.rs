@@ -14,11 +14,12 @@ use tokio::{
     task::JoinSet,
     time::{sleep_until, Instant},
 };
-use tracing::{debug, error, info, Level};
+use tracing::{debug, error, info, instrument, span, Instrument, Level, Span};
 
 #[tokio::main]
 async fn main() -> impl Termination {
     tracing_subscriber::fmt()
+        .with_target(false)
         .with_max_level(Level::TRACE)
         .init();
 
@@ -32,61 +33,70 @@ async fn main() -> impl Termination {
 
     let mut tasks = JoinSet::new();
 
-    let stop_rx_one = stop_rx.clone();
-    tasks.spawn(async move {
-        let mut stop_rx = stop_rx_one;
-        let socket = match Socket::attach() {
-            Ok(socket) => socket,
-            Err(error) => {
-                error!("failed to connect to socket: {error:?}");
-                return Err(());
+    let socket_span = span!(Level::INFO, "socket");
+
+    let stop_rx_inner = stop_rx.clone();
+    let socket_span_inner = socket_span.clone();
+    tasks.spawn(
+        async move {
+            let mut stop_rx = stop_rx_inner;
+            let socket = match Socket::attach() {
+                Ok(socket) => socket,
+                Err(error) => {
+                    error!("failed to connect to socket: {error:?}");
+                    return Err(());
+                }
+            };
+
+            info!("attached to systemd socket");
+
+            loop {
+                tokio::select! {
+                    biased;
+
+                    _ = stop_rx.changed() => {
+                        info!("received SIGTERM signal, stopping the socket handler!");
+                        break
+                    },
+
+                    result = socket.accept() => {
+                        let connection = match result {
+                            Ok(connection) => connection,
+                            Err(error) => {
+                                error!("failed to accept socket connection: {error:?}");
+                                continue;
+                            }
+                        };
+
+                        handle_socket_connection(connection, socket_span_inner.clone()).await;
+                    }
+                }
             }
-        };
 
-        info!("attached to systemd socket");
+            Ok(())
+        }
+        .instrument(socket_span),
+    );
 
-        loop {
+    tasks.spawn(
+        async move {
+            //let server = Server::new(configuration);
+
             tokio::select! {
                 biased;
 
                 _ = stop_rx.changed() => {
-                    info!("received SIGTERM signal, stopping the socket handler!");
-                    break
+                    info!("received SIGTERM signal, stopping the server!");
                 },
 
-                result = socket.accept() => {
-                    let connection = match result {
-                        Ok(connection) => connection,
-                        Err(error) => {
-                            error!("failed to accept socket connection: {error:?}");
-                            continue;
-                        }
-                    };
-
-                    handle_socket_connection(connection).await;
-                }
+                // TODO: accept server connections here
+                _ = sleep_until(Instant::now() + Duration::from_days(100)) => {}
             }
+
+            Ok(())
         }
-
-        Ok(())
-    });
-
-    tasks.spawn(async move {
-        //let server = Server::new(configuration);
-
-        tokio::select! {
-            biased;
-
-            _ = stop_rx.changed() => {
-                info!("received SIGTERM signal, stopping the server!");
-            },
-
-            // TODO: accept server connections here
-            _ = sleep_until(Instant::now() + Duration::from_days(100)) => {}
-        }
-
-        Ok(())
-    });
+        .instrument(span!(Level::INFO, "server")),
+    );
 
     let mut completed = 0;
     while let Some(result) = tasks.join_next().await {
@@ -108,51 +118,61 @@ async fn main() -> impl Termination {
     ExitCode::SUCCESS
 }
 
-async fn handle_socket_connection(mut connection: SocketConnection) {
-    // Most of the time each connection only makes a single request, but we
-    // spawn a task anyway to prevent blocking when multiple requests are sent
-    // or the requests take a long time to process.
-    info!(
-        "handling connection from address {:?}",
-        connection.socket_address
-    );
-    tokio::spawn(async move {
-        loop {
-            let result = connection.accept().await;
-            let message = match result {
-                Ok(maybe_message) => match maybe_message {
-                    None => break,
-                    Some(message) => message,
-                },
-                Err(error) => {
-                    error!("failed to read incoming message: {error:?}");
-                    continue;
+async fn handle_socket_connection(mut connection: SocketConnection, span: Span) {
+    let handler_span = span!(Level::INFO, "handler");
+    let handler_span_inner = handler_span.clone();
+    let _ = async move {
+        // Most of the time each connection only makes a single request, but we
+        // spawn a task anyway to prevent blocking when multiple requests are sent
+        // or the requests take a long time to process.
+        info!(
+            "handling connection from address {:?}",
+            connection.socket_address
+        );
+
+        tokio::spawn(
+            async move {
+                loop {
+                    let result = connection.accept().await;
+                    let message = match result {
+                        Ok(maybe_message) => match maybe_message {
+                            None => break,
+                            Some(message) => message,
+                        },
+                        Err(error) => {
+                            error!("failed to read incoming message: {error:?}");
+                            continue;
+                        }
+                    };
+
+                    info!(
+                        id = message.id,
+                        "received socket request = {:?}", message.request,
+                    );
+
+                    let response = handle_socket_request(message.request);
+
+                    info!(
+                        id = message.id,
+                        "replying to socket request = {:?}", response
+                    );
+
+                    if let Err(error) = connection
+                        .reply(Reply {
+                            regarding: message.id,
+                            response,
+                        })
+                        .await
+                    {
+                        error!("failed to send reply: {error:?}")
+                    };
                 }
-            };
-
-            info!(
-                id = message.id,
-                "received socket request = {:?}", message.request,
-            );
-
-            let response = handle_socket_request(message.request);
-
-            info!(
-                id = message.id,
-                "replying to socket request = {:?}", response
-            );
-
-            if let Err(error) = connection
-                .reply(Reply {
-                    regarding: message.id,
-                    response,
-                })
-                .await
-            {
-                error!("failed to send reply: {error:?}")
-            };
-        }
-    });
+            }
+            .instrument(handler_span_inner.clone()),
+        )
+        .await
+    }
+    .await;
 }
 
 fn handle_socket_request(request: Request) -> Response {
