@@ -3,23 +3,11 @@ name = "sail_daemon"
 version = "0.1.0"
 edition = "2021"
 
-[dependencies]
-axum = { workspace = true, features = ["macros"] }
-http-body-util.workspace = true
-hyper = { workspace = true, features = ["full"] }
-hyper-util = { workspace = true, features = ["full"] }
-pin-project = "1.1.5"
-sail_config = { path = "../config" }
-sail_core = { path = "../core" }
-sail_web = { path = "../web" }
-serde = { workspace = true, features = ["derive"] }
-serde_json.workspace = true
-tokio = { workspace = true, features = ["full"] }
-toml = "0.8.14"
-tower.workspace = true
-tracing.workspace = true
-tracing-subscriber = "0.3.8"
-
 [[bin]]
 name = "saild"
 path = "src/main.rs"
+
+[dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tracing.workspace = true
+tracing-subscriber.workspace = true

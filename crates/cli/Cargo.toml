@@ -1,15 +1,8 @@
 [package]
-name = "sail_cli"
+name = "cli"
 version = "0.1.0"
 edition = "2021"
 
 [[bin]]
 path = "src/main.rs"
 name = "sail"
-
-[dependencies]
-owo-colors = "4.0.0"
-rand = "0.8.5"
-sail_core = { path = "../core" }
-serde = { workspace = true, features = ["derive"] }
-serde_json.workspace = true
