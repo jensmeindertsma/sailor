@@ -1,4 +1,13 @@
-use std::{env, process::Termination};
+mod command;
+mod socket;
+
+use std::{
+    env,
+    process::{ExitCode, Termination},
+};
+
+use sail_core::Request;
+use socket::Socket;
 
 const SOCKET_PATH: &str = "/run/sail.socket";
 
@@ -7,5 +16,13 @@ fn main() -> impl Termination {
 
     println!("Arguments = {arguments:?}");
 
-    todo!("connect to socket at `{SOCKET_PATH}`")
+    let mut socket = Socket::connect(SOCKET_PATH).unwrap();
+
+    println!("Sending greeting ...");
+
+    let response = socket.send_request(Request::Greeting);
+
+    println!("Response to greeting = {response:?}");
+
+    ExitCode::SUCCESS
 }
