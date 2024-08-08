@@ -1,4 +1,4 @@
-use sail_core::{Message, Reply};
+use sail_core::socket::{SocketMessage, SocketReply};
 use tokio::{
     io::{self, AsyncWriteExt, BufReader, Lines},
     net::unix::{OwnedReadHalf, OwnedWriteHalf, SocketAddr},
@@ -8,23 +8,23 @@ use tokio::{
 pub struct SocketConnection {
     reader: Lines<BufReader<OwnedReadHalf>>,
     writer: OwnedWriteHalf,
-    pub socket_address: SocketAddr,
+    pub address: SocketAddr,
 }
 
 impl SocketConnection {
     pub fn new(
         reader: Lines<BufReader<OwnedReadHalf>>,
         writer: OwnedWriteHalf,
-        socket_address: SocketAddr,
+        address: SocketAddr,
     ) -> Self {
         Self {
             reader,
             writer,
-            socket_address,
+            address,
         }
     }
 
-    pub async fn accept(&mut self) -> Result<Option<Message>, ConnectionError> {
+    pub async fn accept(&mut self) -> Result<Option<SocketMessage>, ConnectionError> {
         let maybe_line = self
             .reader
             .next_line()
@@ -33,13 +33,14 @@ impl SocketConnection {
 
         Ok(match maybe_line {
             Some(line) => Some(
-                serde_json::from_str::<Message>(&line).map_err(ConnectionError::Deserialization)?,
+                serde_json::from_str::<SocketMessage>(&line)
+                    .map_err(ConnectionError::Deserialization)?,
             ),
             None => None,
         })
     }
 
-    pub async fn reply(&mut self, reply: Reply) -> Result<(), ConnectionError> {
+    pub async fn reply(&mut self, reply: SocketReply) -> Result<(), ConnectionError> {
         self.writer
             .write_all(
                 format!(

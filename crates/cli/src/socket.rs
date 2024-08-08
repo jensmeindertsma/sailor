@@ -1,4 +1,4 @@
-use sail_core::{Message, Reply, Request, Response};
+use sail_core::socket::{SocketMessage, SocketReply, SocketRequest, SocketResponse};
 use std::{
     io::{self, BufRead, BufReader, Lines, Write},
     os::unix::net::UnixStream,
@@ -22,8 +22,8 @@ impl Socket {
         })
     }
 
-    pub fn send_request(&mut self, request: Request) -> Result<Response, SocketError> {
-        let message = Message {
+    pub fn send_request(&mut self, request: SocketRequest) -> Result<SocketResponse, SocketError> {
+        let message = SocketMessage {
             id: self.next_id,
             request,
         };
@@ -33,7 +33,8 @@ impl Socket {
         self.writer
             .write_all(format!("{}\n", serde_json::to_string(&message)?).as_bytes())?;
 
-        let reply: Reply = serde_json::from_str(&self.reader.next().ok_or(SocketError::NoReply)??)?;
+        let reply: SocketReply =
+            serde_json::from_str(&self.reader.next().ok_or(SocketError::NoReply)??)?;
 
         if reply.regarding != message.id {
             return Err(SocketError::ReplyMismatch);

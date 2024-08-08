@@ -1,12 +1,10 @@
 mod connection;
 
 pub use connection::SocketConnection;
-
 use std::{
     env::{self, VarError},
     os::fd::FromRawFd,
 };
-
 use tokio::{
     io::{self, AsyncBufReadExt, BufReader},
     net::UnixListener,

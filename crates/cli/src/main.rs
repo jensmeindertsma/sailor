@@ -1,4 +1,3 @@
-mod command;
 mod socket;
 
 use std::{
@@ -6,7 +5,7 @@ use std::{
     process::{ExitCode, Termination},
 };
 
-use sail_core::Request;
+use sail_core::socket::SocketRequest;
 use socket::Socket;
 
 const SOCKET_PATH: &str = "/run/sail.socket";
@@ -20,7 +19,7 @@ fn main() -> impl Termination {
 
     println!("Sending greeting ...");
 
-    let response = socket.send_request(Request::Greeting);
+    let response = socket.send_request(SocketRequest::Greeting);
 
     println!("Response to greeting = {response:?}");
 

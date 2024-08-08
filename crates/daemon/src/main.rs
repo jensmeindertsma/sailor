@@ -1,23 +1,23 @@
-#![feature(duration_constructors)]
-
+mod app;
+mod configuration;
+mod server;
 mod socket;
 
-use sail_core::{Reply, Request, Response};
-use socket::{Socket, SocketConnection};
-use std::{
-    process::{ExitCode, Termination},
-    time::Duration,
-};
+use app::{handle_server_connection, handle_socket_connection};
+use configuration::Configuration;
+use hyper::server::conn::http1;
+use hyper_util::server::graceful::GracefulShutdown;
+use server::Server;
+use socket::Socket;
+use std::{process::ExitCode, sync::Arc};
 use tokio::{
     signal::unix::{signal, SignalKind},
     sync::watch,
-    task::JoinSet,
-    time::{sleep_until, Instant},
 };
-use tracing::{debug, error, info, instrument, span, Instrument, Level, Span};
+use tracing::{error, info, span, Instrument, Level};
 
 #[tokio::main]
-async fn main() -> impl Termination {
+async fn main() -> ExitCode {
     tracing_subscriber::fmt()
         .with_target(false)
         .with_max_level(Level::TRACE)
@@ -26,20 +26,14 @@ async fn main() -> impl Termination {
     let (stop_tx, mut stop_rx) = watch::channel(());
 
     tokio::spawn(async move {
-        let mut sigterm = signal(SignalKind::terminate()).unwrap();
-        sigterm.recv().await;
+        let mut termination = signal(SignalKind::terminate()).unwrap();
+        termination.recv().await;
         stop_tx.send(()).unwrap();
     });
 
-    let mut tasks = JoinSet::new();
-
-    let socket_span = span!(Level::INFO, "socket");
-
     let stop_rx_inner = stop_rx.clone();
-    let socket_span_inner = socket_span.clone();
-    tasks.spawn(
+    let socket_task_handle = tokio::spawn(
         async move {
-            let mut stop_rx = stop_rx_inner;
             let socket = match Socket::attach() {
                 Ok(socket) => socket,
                 Err(error) => {
@@ -52,10 +46,8 @@ async fn main() -> impl Termination {
 
             loop {
                 tokio::select! {
-                    biased;
-
-                    _ = stop_rx.changed() => {
-                        info!("received SIGTERM signal, stopping the socket handler!");
+                    _ = stop_rx_inner.changed() => {
+                        info!("received termination signal, stopping the socket handler!");
                         break
                     },
 
@@ -68,115 +60,78 @@ async fn main() -> impl Termination {
                             }
                         };
 
-                        handle_socket_connection(connection, socket_span_inner.clone()).await;
+                        tokio::spawn(
+                            async move {
+                                handle_socket_connection(connection).await;
+                            }.instrument(span!(Level::INFO, "handler")
+                        ));
                     }
                 }
             }
 
             Ok(())
         }
-        .instrument(socket_span),
+        .instrument(span!(Level::INFO, "socket")),
     );
 
-    tasks.spawn(
-        async move {
-            //let server = Server::new(configuration);
-
-            tokio::select! {
-                biased;
-
-                _ = stop_rx.changed() => {
-                    info!("received SIGTERM signal, stopping the server!");
-                },
-
-                // TODO: accept server connections here
-                _ = sleep_until(Instant::now() + Duration::from_days(100)) => {}
-            }
-
-            Ok(())
+    let configuration = Arc::new(match Configuration::from_filesystem() {
+        Ok(configuration) => configuration,
+        Err(error) => {
+            error!("Failed to get configuration from filesystem: {error:?}");
+            return ExitCode::FAILURE;
         }
-        .instrument(span!(Level::INFO, "server")),
-    );
+    });
 
-    let mut completed = 0;
-    while let Some(result) = tasks.join_next().await {
-        debug!("completed task {completed}, {} remaining", tasks.len());
-        completed += 1;
+    let server = match Server::new(configuration).await {
+        Ok(server) => server,
+        Err(error) => {
+            error!("failed to set up server: {error:?}");
+            return ExitCode::FAILURE;
+        }
+    };
 
-        match result {
-            Ok(result) => {
-                if result.is_err() {
-                    error!("task failed!")
-                }
+    let http_stack = http1::Builder::new();
+    let shutdown_helper = GracefulShutdown::new();
+
+    loop {
+        tokio::select! {
+            _ = stop_rx.changed() => {
+                info!("received termination signal, stopping the server!");
+                break
+            },
+
+            result = server.accept() => {
+                let connection = match result {
+                    Ok(connection) => connection,
+                    Err(error) => {
+                        error!("failed to accept connection: {error:?}");
+                        continue
+                    }
+                };
+
+                let future = handle_server_connection(connection, &http_stack, &shutdown_helper);
+
+                tokio::spawn(
+                    async move {
+                        future.await;
+                    }
+                );
             }
-            Err(error) => {
-                error!("task failed to join: {error:?}")
-            }
+        };
+    }
+
+    if let Err(error) = socket_task_handle.await {
+        error!("failed to complete socket handler task")
+    };
+
+    tokio::select! {
+        _ = shutdown_helper.shutdown() => {
+            info!("all connections gracefully closed");
+        },
+        _ = tokio::time::sleep(std::time::Duration::from_secs(10)) => {
+            error!("timed out wait for all connections to close");
         }
     }
 
     ExitCode::SUCCESS
-}
-
-async fn handle_socket_connection(mut connection: SocketConnection, span: Span) {
-    let handler_span = span!(Level::INFO, "handler");
-    let handler_span_inner = handler_span.clone();
-    let _ = async move {
-        // Most of the time each connection only makes a single request, but we
-        // spawn a task anyway to prevent blocking when multiple requests are sent
-        // or the requests take a long time to process.
-        info!(
-            "handling connection from address {:?}",
-            connection.socket_address
-        );
-
-        tokio::spawn(
-            async move {
-                loop {
-                    let result = connection.accept().await;
-                    let message = match result {
-                        Ok(maybe_message) => match maybe_message {
-                            None => break,
-                            Some(message) => message,
-                        },
-                        Err(error) => {
-                            error!("failed to read incoming message: {error:?}");
-                            continue;
-                        }
-                    };
-
-                    info!(
-                        id = message.id,
-                        "received socket request = {:?}", message.request,
-                    );
-
-                    let response = handle_socket_request(message.request);
-
-                    info!(
-                        id = message.id,
-                        "replying to socket request = {:?}", response
-                    );
-
-                    if let Err(error) = connection
-                        .reply(Reply {
-                            regarding: message.id,
-                            response,
-                        })
-                        .await
-                    {
-                        error!("failed to send reply: {error:?}")
-                    };
-                }
-            }
-            .instrument(handler_span_inner.clone()),
-        )
-        .await
-    }
-    .await;
-}
-
-fn handle_socket_request(request: Request) -> Response {
-    match request {
-        Request::Greeting => Response::Okay,
-    }
 }

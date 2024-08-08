@@ -3,6 +3,9 @@ resolver = "2"
 members = ["crates/*"]
 
 [workspace.dependencies]
+http-body-util = "0.1.2"
+hyper = "1.4.1"
+hyper-util = "0.1.7"
 rand = "0.8.5"
 serde = "1.0.204"
 serde_json = "1.0.122"
