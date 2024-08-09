@@ -9,8 +9,9 @@ path = "src/main.rs"
 
 [dependencies]
 http-body-util.workspace = true
-hyper = { workspace = true, features = ["http1"] }
+hyper = { workspace = true }
 hyper-util = { workspace = true, features = [
+    "http1",
     "server-graceful",
     "service",
     "tokio",

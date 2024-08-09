@@ -1,6 +1,6 @@
 mod connection;
 
-pub use connection::{handle_server_connection, handle_socket_connection};
+pub use connection::handle_socket_connection;
 
 use http_body_util::Full;
 use hyper::body::{Bytes, Incoming};
@@ -13,8 +13,11 @@ fn handle_socket_request(request: SocketRequest) -> SocketResponse {
     }
 }
 
-async fn handle_server_request(
+pub async fn handle_server_request(
     request: hyper::Request<Incoming>,
 ) -> Result<hyper::Response<Full<Bytes>>, Infallible> {
-    todo!()
+    Ok(hyper::Response::new(Full::new(Bytes::from(format!(
+        "Hello, World! '{}'",
+        request.uri()
+    )))))
 }

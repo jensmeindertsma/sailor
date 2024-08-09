@@ -3,10 +3,10 @@ mod configuration;
 mod server;
 mod socket;
 
-use app::{handle_server_connection, handle_socket_connection};
+use app::{handle_server_request, handle_socket_connection};
 use configuration::Configuration;
-use hyper::server::conn::http1;
-use hyper_util::server::graceful::GracefulShutdown;
+use hyper::{server::conn::http1, service::service_fn};
+use hyper_util::{rt::TokioIo, server::graceful::GracefulShutdown};
 use server::Server;
 use socket::Socket;
 use std::{process::ExitCode, sync::Arc};
@@ -31,14 +31,14 @@ async fn main() -> ExitCode {
         stop_tx.send(()).unwrap();
     });
 
-    let stop_rx_inner = stop_rx.clone();
+    let mut stop_rx_inner = stop_rx.clone();
     let socket_task_handle = tokio::spawn(
         async move {
             let socket = match Socket::attach() {
                 Ok(socket) => socket,
                 Err(error) => {
                     error!("failed to connect to socket: {error:?}");
-                    return Err(());
+                    return Err(error);
                 }
             };
 
@@ -109,19 +109,21 @@ async fn main() -> ExitCode {
                     }
                 };
 
-                let future = handle_server_connection(connection, &http_stack, &shutdown_helper);
+                let io = TokioIo::new(connection.stream);
+                let connection = http_stack.serve_connection(io, service_fn(handle_server_request));
+                let future = shutdown_helper.watch(connection);
 
-                tokio::spawn(
-                    async move {
-                        future.await;
+                tokio::spawn(async move {
+                    if let Err(error) = future.await {
+                        error!("failed to serve connection: {error:?}")
                     }
-                );
+                })
             }
         };
     }
 
     if let Err(error) = socket_task_handle.await {
-        error!("failed to complete socket handler task")
+        error!("failed to complete socket handler task: {error:?}")
     };
 
     tokio::select! {

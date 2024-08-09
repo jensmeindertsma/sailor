@@ -1,12 +1,7 @@
-use super::{handle_server_request, handle_socket_request};
-use crate::{server::ServerConnection, socket::SocketConnection};
-use hyper::{server::conn::http1::Builder as ConnectionBuilder, service::service_fn};
-use hyper_util::{
-    rt::TokioIo,
-    server::graceful::{GracefulConnection, GracefulShutdown},
-};
+use super::handle_socket_request;
+use crate::socket::SocketConnection;
+
 use sail_core::socket::SocketReply;
-use tokio::pin;
 use tracing::{error, info};
 
 pub async fn handle_socket_connection(mut connection: SocketConnection) {
@@ -50,19 +45,4 @@ pub async fn handle_socket_connection(mut connection: SocketConnection) {
             error!("failed to send reply: {error:?}")
         };
     }
-}
-
-pub async fn handle_server_connection(
-    connection: ServerConnection,
-    http_stack: &ConnectionBuilder,
-    shutdown_helper: &GracefulShutdown,
-) -> Result<(), hyper::Error> {
-    info!("serving connection from {}", connection.address);
-
-    let io = TokioIo::new(connection.stream);
-    let conn = http_stack.serve_connection(io, service_fn(handle_server_request));
-    pin!(conn);
-    shutdown_helper.watch(conn);
-
-    conn.await
 }
