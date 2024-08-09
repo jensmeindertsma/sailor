@@ -3,16 +3,17 @@ mod configuration;
 mod server;
 mod socket;
 
-use app::{handle_server_request, handle_socket_connection};
+use app::{handle_server_request, handle_socket_connection, Handler};
 use configuration::Configuration;
 use hyper::{server::conn::http1, service::service_fn};
-use hyper_util::{rt::TokioIo, server::graceful::GracefulShutdown};
+use hyper_util::{rt::TokioIo, server::graceful::GracefulShutdown, service::TowerToHyperService};
 use server::Server;
 use socket::Socket;
-use std::{process::ExitCode, sync::Arc};
+use std::{process::ExitCode, sync::Arc, time::Duration};
 use tokio::{
     signal::unix::{signal, SignalKind},
     sync::watch,
+    time::sleep,
 };
 use tracing::{error, info, span, Instrument, Level};
 
@@ -166,11 +167,13 @@ async fn main() -> ExitCode {
                     }
                 };
 
+                let handler = Handler::new(configuration);
+
                 // These three lines wrap the connection stream in a future-driven
-                // data structure that handler the whole HTTP1.1 protocol, as well
+                // data structure that handles the whole HTTP1.1 protocol, as well
                 // as registering the connection for graceful shutdown.
                 let io = TokioIo::new(connection.stream);
-                let connection = http_stack.serve_connection(io, service_fn(handle_server_request));
+                let connection = http_stack.serve_connection(io, TowerToHyperService::new(handler));
                 let future = shutdown_helper.watch(connection);
 
                 // Each future is then moved into its own task, allowing the accept
@@ -190,7 +193,7 @@ async fn main() -> ExitCode {
         _ = shutdown_helper.shutdown() => {
             info!("all connections gracefully closed");
         },
-        _ = tokio::time::sleep(std::time::Duration::from_secs(10)) => {
+        _ = sleep(Duration::from_secs(10)) => {
             error!("timed out wait for all connections to close");
         }
     }
