@@ -17,7 +17,7 @@ pub async fn handle_server_request(
     request: hyper::Request<Incoming>,
 ) -> Result<hyper::Response<Full<Bytes>>, Infallible> {
     Ok(hyper::Response::new(Full::new(Bytes::from(format!(
-        "Hello, World! '{}'",
+        "Hello, World! '{}'\n",
         request.uri()
     )))))
 }
