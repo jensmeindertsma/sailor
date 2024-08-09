@@ -1,13 +1,17 @@
-use super::handle_socket_request;
-use crate::socket::SocketConnection;
-
-use sail_core::socket::SocketReply;
+use super::SocketConnection;
+use sail_core::socket::{SocketReply, SocketRequest, SocketResponse};
+use std::{convert::Infallible, future::Future};
+use tower::Service;
 use tracing::{error, info};
 
-pub async fn handle_socket_connection(mut connection: SocketConnection) {
-    // Most of the time each connection only makes a single request, but we
-    // spawn a task anyway to prevent blocking when multiple requests are sent
-    // or the requests take a long time to process.
+pub async fn serve_connection<S, F>(
+    mut connection: SocketConnection,
+    mut service: S,
+) -> Result<(), Infallible>
+where
+    S: Service<SocketRequest, Response = SocketResponse, Error = Infallible, Future = F>,
+    F: Future<Output = Result<SocketResponse, Infallible>>,
+{
     info!("handling connection from address {:?}", connection.address);
 
     loop {
@@ -28,7 +32,7 @@ pub async fn handle_socket_connection(mut connection: SocketConnection) {
             "received socket request = {:?}", message.request,
         );
 
-        let response = handle_socket_request(message.request);
+        let response = service.call(message.request).await?;
 
         info!(
             id = message.id,
@@ -45,4 +49,6 @@ pub async fn handle_socket_connection(mut connection: SocketConnection) {
             error!("failed to send reply: {error:?}")
         };
     }
+
+    Ok(())
 }

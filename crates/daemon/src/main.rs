@@ -3,9 +3,9 @@ mod configuration;
 mod server;
 mod socket;
 
-use app::{handle_server_request, handle_socket_connection, Handler};
+use app::{ServerHandler, SocketHandler};
 use configuration::Configuration;
-use hyper::{server::conn::http1, service::service_fn};
+use hyper::server::conn::http1;
 use hyper_util::{rt::TokioIo, server::graceful::GracefulShutdown, service::TowerToHyperService};
 use server::Server;
 use socket::Socket;
@@ -64,8 +64,16 @@ async fn main() -> ExitCode {
         stop_tx.send(()).unwrap();
     });
 
-    let mut stop_rx_inner = stop_rx.clone();
+    let configuration = Arc::new(match Configuration::from_filesystem() {
+        Ok(configuration) => configuration,
+        Err(error) => {
+            error!("Failed to get configuration from filesystem: {error:?}");
+            return ExitCode::FAILURE;
+        }
+    });
 
+    let mut stop_rx_socket = stop_rx.clone();
+    let configuration_socket = configuration.clone();
     // We place the socket handling logic into a separate
     // tokio task, so it can process requests without blocking the server.
     let socket_task_handle = tokio::spawn(
@@ -86,7 +94,7 @@ async fn main() -> ExitCode {
             // acceptance of new connections.
             loop {
                 tokio::select! {
-                    _ = stop_rx_inner.changed() => {
+                    _ = stop_rx_socket.changed() => {
                         info!("received termination signal, stopping the socket handler!");
                         break
                     },
@@ -100,6 +108,9 @@ async fn main() -> ExitCode {
                             }
                         };
 
+                        let service = SocketHandler::new(configuration_socket.clone());
+                        let future = socket::serve_connection(connection, service);
+
                         // Already established connections are spawned into their
                         // own task to help create non-blocking service and to allow
                         // existing connections to be finished before terminating.
@@ -112,11 +123,11 @@ async fn main() -> ExitCode {
                         // future since it is probably not too difficult to implement this manually.
                         // We'd need some kind of way to reply to all open messages with a
                         // `SocketResponse::Shutdown`.
-                        tokio::spawn(
-                            async move {
-                                handle_socket_connection(connection).await;
-                            }.instrument(span!(Level::INFO, "handler")
-                        ));
+                        tokio::spawn(async move {
+                            if let Err(error) = future.await {
+                                error!("failed to serve socket connection: {error:?}")
+                            }.instrument(span!(Level::INFO, "handler"))
+                        });
                     }
                 }
             }
@@ -126,15 +137,7 @@ async fn main() -> ExitCode {
         .instrument(span!(Level::INFO, "socket")),
     );
 
-    let configuration = Arc::new(match Configuration::from_filesystem() {
-        Ok(configuration) => configuration,
-        Err(error) => {
-            error!("Failed to get configuration from filesystem: {error:?}");
-            return ExitCode::FAILURE;
-        }
-    });
-
-    let server = match Server::new(configuration).await {
+    let server = match Server::new(configuration.clone()).await {
         Ok(server) => server,
         Err(error) => {
             error!("failed to set up server: {error:?}");
@@ -167,7 +170,7 @@ async fn main() -> ExitCode {
                     }
                 };
 
-                let handler = Handler::new(configuration);
+                let handler = ServerHandler::new(configuration.clone());
 
                 // These three lines wrap the connection stream in a future-driven
                 // data structure that handles the whole HTTP1.1 protocol, as well
@@ -182,7 +185,7 @@ async fn main() -> ExitCode {
                 // executor.
                 tokio::spawn(async move {
                     if let Err(error) = future.await {
-                        error!("failed to serve connection: {error:?}")
+                        error!("failed to serve http connection: {error:?}")
                     }.instrument(span!(Level::INFO, "handler"))
                 })
             }

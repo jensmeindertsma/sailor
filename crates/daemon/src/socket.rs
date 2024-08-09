@@ -1,6 +1,8 @@
 mod connection;
+mod service;
 
 pub use connection::SocketConnection;
+pub use service::serve_connection;
 use std::{
     env::{self, VarError},
     os::fd::FromRawFd,
